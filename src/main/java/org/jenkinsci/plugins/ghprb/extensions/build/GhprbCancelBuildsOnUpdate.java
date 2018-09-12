@@ -85,10 +85,20 @@ public class GhprbCancelBuildsOnUpdate extends GhprbExtension implements
             if (!run.isBuilding() && !run.hasntStartedYet()) {
                 break;
             }
+
             GhprbCause cause = Ghprb.getCause(run);
             if (cause == null) {
-                continue;
+                // If any downstream job was triggered by the job also abort that jobs.
+                Cause.UpstreamCause downstreamBuild = run.getCause(Cause.UpstreamCause.class);
+                if ( downstreamBuild == null){
+                    continue;
+                }
+                cause = downstreamBuild.getUpstreamRun().getCause(GhprbCause.class);
+                if (cause == null){
+                    continue;
+                }
             }
+
             if (cause.getPullID() == prId) {
                 try {
                     LOGGER.log(
